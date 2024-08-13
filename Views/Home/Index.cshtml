@@ -1,0 +1,513 @@
+﻿@model IEnumerable<Device_Migration_Admin_Portal.Models.DeviceMigration>
+
+@{
+    ViewData["Title"] = "Device Status";
+}
+
+<style>
+     /* Adjust the layout of the DataTables top and bottom sections */
+    .dataTables_wrapper .top,
+    .dataTables_wrapper .bottom {
+        width: 100%;
+    }
+
+    /* Add custom styles for the container */
+    .container {
+        /* display: flex;
+        justify-content: space-between; */
+    }
+
+    /* Style for filter and export dropdown */
+    .dropdown {
+        float: right;
+        margin-left: 10px; /* Add spacing between filter and dropdown */
+    }
+
+
+    /* Add custom styles for the table */
+    .dataTables_filter {
+        display: none;
+    }
+
+    .table-container {
+        margin-top: 20px;
+        width: 100%; /* Ensure the container spans the full width */
+        overflow-x: auto; /* Enable horizontal scrolling if necessary */
+    }
+
+        .table-container table {
+            width: 100%; /* Ensure the table spans the full width of its container */
+            border-collapse: collapse;
+        }
+
+        .table-container th,
+        .table-container td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-container th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .table-container tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .table-container tr:hover {
+            background-color: #ddd;
+        }
+
+    .circle {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
+        cursor: pointer;
+    }
+
+    .overall-status {
+        white-space: nowrap;
+    }
+
+    .circle.blue {
+        background-color: blue;
+    }
+
+    .circle.red {
+        background-color: red;
+    }
+
+    .circle.green {
+        background-color: green;
+    }
+
+    .circle.yellow {
+        background-color: grey;
+    }
+
+    /* Popup styles */
+    .popup {
+        display: none;
+        position: absolute;
+        background-color: white;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1100; /* Ensure this is higher than any potentially overlapping elements */
+        max-width: 420px;
+    }
+
+    .popup-content {
+        position: relative; /* Ensure the popup content is positioned relative */
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 400px; /* Adjust width as needed */
+        padding: 10px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .arrow {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        border-left: 10px solid white; /* Color of the arrow pointing to the right */
+        top: 50%; /* Position in the middle vertically */
+        right: -10px; /* Adjust distance from right side */
+        transform: translateY(-50%); /* Center vertically */
+    }
+
+    .details {
+        flex: 1;
+    }
+
+    .statuses {
+        flex: 1;
+        text-align: right;
+    }
+
+
+    #chart-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    canvas {
+        width: 250px !important;
+        height: 100px !important;
+    }
+    /* Style for the filter container */
+    .filter-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center; /* Center vertically */
+    }
+
+    /* Style for the filter div */
+    .filter {
+        display: flex;
+        align-items: center; /* Center vertically */
+    }
+
+    /* Adjust margin for the dropdown */
+    .dropdown {
+        margin-left: 10px; /* Add margin between filter and dropdown */
+    }
+
+
+</style>
+
+<div id="chart-container">
+    <h2>Device Status</h2>
+    <!--<canvas id="statusChart"></canvas>-->
+</div>
+
+<div class="filter-container">
+    <div class="filter">
+        <label for="statusFilter">Filter by Overall Status:</label>
+        <select id="statusFilter" onchange="filterTable()">
+            <option value="">All</option>
+            <option value="Not Started">Not Started</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Failed">Failed</option>
+        </select>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle bg-dark" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Export
+        </button>
+        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+            <a class="dropdown-item" href="#" onclick="exportToExcel(event)">Export to Excel</a>
+            <a class="dropdown-item" href="#" onclick="exportToCSV(event)">Export to CSV</a>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<div class="table-container">
+    <table class="table" id="deviceTable">
+        <thead>
+            <tr>
+                <th>Device Serial</th>
+                <th>Device Name</th>
+                <th>User Name</th>
+                <th>User Email</th>
+                @* <th>Migration Not Started</th>
+                <th>Migration In Progress</th>
+                <th>Migration Completed</th>
+                <th>Migration Failed</th> *@
+                <th>Overall Status</th>
+            </tr>
+        </thead>
+        <tbody id="deviceTableBody">
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.DeviceSerial</td>
+                    <td>@item.DeviceName</td>
+                    <td>@item.UserName</td>
+                    <td>@item.UserEmail</td>
+                    @* <td>@(item.MigrationNotStarted ? "Not Started" : "Started")</td>
+                    <td>@(item.MigrationInProgress ? "In Progress" : "Not In Progress")</td>
+                    <td>@(item.MigrationCompleted ? "Completed" : "Not Completed")</td>
+                    <td>@(item.MigrationFailed ? "Failed" : "Not Failed")</td> *@
+                    <td class="overall-status">
+                        @if (item.OverallStatus == "In Progress")
+                        {
+                            <span class="circle blue" data-status="In Progress" id="circle-@item.DeviceSerial"></span>
+                        }
+                        else if (item.OverallStatus == "Failed")
+                        {
+                            <span class="circle red" data-status="Failed" id="circle-@item.DeviceSerial"></span>
+                        }
+                        else if (item.OverallStatus == "Completed")
+                        {
+                            <span class="circle green" data-status="Completed" id="circle-@item.DeviceSerial"></span>
+                        }
+                        else if (item.OverallStatus == "Not Started")
+                        {
+                            <span class="circle yellow" data-status="Not Started" id="circle-@item.DeviceSerial"></span>
+                        }
+                        @item.OverallStatus
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Popup element -->
+<div id="popup" class="popup"></div>
+
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            var table = $('#deviceTable').DataTable({
+                searching: true,
+                lengthChange: false,
+                dom: '<"top"lf<"clear">>rt<"bottom"ip<"clear">>'
+            });
+
+            // Event delegation for overall status cell click
+            $('#deviceTable').on('click', '.overall-status', function (event) {
+                const $circle = $(this).find('.circle'); // Find the circle element within the clicked cell
+                const status = $circle.attr('data-status'); // Get status from the circle
+                const deviceSerial = $circle.attr('id').replace('circle-', ''); // Extract device serial
+
+                // Fetch additional details using AJAX
+                $.ajax({
+                    url: '/Data/GetDeviceDetails', // Corrected URL to match the controller and action in the Controllers folder
+                    type: 'GET',
+                    data: { deviceSerial: deviceSerial },
+                    success: function (data) {
+                        // Prepare popup content
+                        const popupContent = `
+                        <div class="popup-content">
+                            <div class="arrow"></div>
+                            <div class="details">
+                                <strong>Device Serial:</strong> <br>
+                                <strong>Status:</strong><br>
+                                <strong>Intune Unenrollment:</strong><br>
+                                <strong>Azure Unregister:</strong><br>
+                                <strong>Outlook Profile Removal:</strong><br>
+                                <strong>OneDrive Unlink:</strong><br>
+                                <strong>User Confirmation:</strong><br>
+                                <strong>User ReRun:</strong><br>
+                                <strong>Sleep Setting:</strong><br>
+                                <strong>M365 Sign Out:</strong><br>
+                                <strong>Teams Sign Out:</strong><br>
+                                <strong>Foresnsit Tool:</strong><br>
+                                <strong>Computer Migration:</strong><br>
+                                <strong>Last Updated Time:</strong><br>
+                            </div>
+                            <div class="statuses">
+                                ${deviceSerial}<br>
+                                <span class="circle ${getCircleClass(status)}"></span>${status}<br>
+                                ${data.intuneUnenrollment ? '✓' : '✗'}<br>
+                                ${data.azureUnregister ? '✓' : '✗'}<br>
+                                ${data.outlookProfileRemoval ? '✓' : '✗'}<br>
+                                ${data.oneDriveUnlink ? '✓' : '✗'}<br>
+                                ${data.userConfirmation ? '✓' : '✗'}<br>
+                                ${data.userReRun ? '✓' : '✗'}<br>
+                                ${data.sleepSetting ? '✓' : '✗'}<br>
+                                ${data.m365SignOut ? '✓' : '✗'}<br>
+                                ${data.teamsSignOut ? '✓' : '✗'}<br>
+                                ${data.foresnsitTool}<br>
+                                ${data.computerMigration ? '✓' : '✗'}<br>
+                                ${data.lastUpdatedTime}<br>
+                            </div>
+                        </div>
+                    `;
+
+                        $('#popup').html(popupContent);
+
+                const rect = event.currentTarget.getBoundingClientRect();
+                const cellLeft = rect.left + window.scrollX;
+                const cellTop = rect.top + window.scrollY;
+                const popupWidth = $('#popup').outerWidth(); // Get popup width
+
+                // Position the popup to the left of the cell
+                let popupLeft = cellLeft - popupWidth - 10; // Adjust 10px for spacing
+                const popupTop = cellTop + (event.currentTarget.offsetHeight / 2) - ($('#popup').outerHeight() / 2); // Center vertically
+
+                // Ensure the popup doesn't go off-screen to the left
+                const viewportWidth = $(window).width();
+                if (popupLeft < 10) {
+                    popupLeft = 10; // Minimum left position to keep it visible
+                }
+
+                $('#popup').css({
+                    display: 'block',
+                    left: `${popupLeft}px`,
+                    top: `${popupTop}px`,
+                    zIndex: 1100 // Ensure a high z-index value
+                });
+
+                event.stopPropagation(); // Prevent closing immediately due to document click
+            },
+            error: function (xhr, status, error) {
+                console.error('Error fetching device details:', error);
+            }
+        });
+    });
+
+    // Close popup when clicking outside
+    $(document).on('click', function (event) {
+        if (!$(event.target).closest('.overall-status').length && !$(event.target).is('#popup')) {
+            $('#popup').css('display', 'none');
+        }
+    });
+
+    // Close popup when DataTables page changes
+    $('#deviceTable').on('page.dt', function () {
+        $('#popup').css('display', 'none');
+    });
+
+    // Generate Chart (assuming this function is defined elsewhere)
+    generateChart();
+});
+
+
+        // Function to determine circle class based on status
+        function getCircleClass(status) {
+            switch (status) {
+                case 'In Progress':
+                    return 'blue';
+                case 'Failed':
+                    return 'red';
+                case 'Completed':
+                    return 'green';
+                case 'Not Started':
+                    return 'yellow';
+                default:
+                    return '';
+            }
+        }
+
+
+        function exportToExcel(event) {
+            event.preventDefault();
+            var table = document.getElementById('deviceTable');
+            if (!table) {
+                console.error("Table element not found");
+                return;
+            }
+            var wb = XLSX.utils.table_to_book(table, { sheet: "Sheet JS" });
+            XLSX.writeFile(wb, 'DeviceStatus.xlsx');
+        }
+
+        function exportToCSV(event) {
+            event.preventDefault();
+            var table = document.getElementById('deviceTable');
+            if (!table) {
+                console.error("Table element not found");
+                return;
+            }
+            var rows = Array.from(table.querySelectorAll('tr'));
+            var csv = rows.map(function (row) {
+                var cols = Array.from(row.querySelectorAll('td, th'));
+                return cols.map(function (col) {
+                    return col.innerText;
+                }).join(',');
+            }).join('\n');
+
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement("a");
+            if (link.download !== undefined) {
+                var url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "DeviceStatus.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        function filterTable() {
+            var filter = document.getElementById("statusFilter").value.trim(); // Trim whitespace
+            var table = $('#deviceTable').DataTable();
+
+            // Set search value for the Overall Status column, making it case-insensitive
+            table.column(4).search(filter, true, false).draw();
+        }
+
+        function generateChart() {
+            var statusCounts = {
+                "Not Started": 0,
+                "In Progress": 0,
+                "Completed": 0,
+                "Failed": 0
+            };
+
+            // Simulated data for demonstration purposes
+            var sampleData = [
+                { status: "Not Started" },
+                { status: "In Progress" },
+                { status: "Completed" },
+                { status: "Completed" },
+                { status: "Failed" }
+            ];
+
+            // Count occurrences of each status
+            sampleData.forEach(function (item) {
+                var status = item.status;
+                statusCounts[status]++;
+            });
+
+            var ctx = document.getElementById('statusChart').getContext('2d');
+            var statusChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [''],  // Single label for the horizontal bar
+                    datasets: [{
+                        data: [statusCounts["Not Started"]],
+                        backgroundColor: 'grey'
+                    }, {
+                        data: [statusCounts["In Progress"]],
+                        backgroundColor: 'blue'
+                    }, {
+                        data: [statusCounts["Completed"]],
+                        backgroundColor: 'green'
+                    }, {
+                        data: [statusCounts["Failed"]],
+                        backgroundColor: 'red'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',  // This makes the bar chart horizontal
+                    responsive: true,
+                    maintainAspectRatio: false,  // Allow manual size adjustment
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                display: false  // Remove the tick labels below the chart
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    let value = context.raw;
+                                    return `${value}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    </script>
+}

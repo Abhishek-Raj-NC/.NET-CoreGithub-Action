@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\Device Migration Admin Portal.props" />
+</Project>
