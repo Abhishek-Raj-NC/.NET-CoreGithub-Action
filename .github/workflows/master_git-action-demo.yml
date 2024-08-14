@@ -4,7 +4,10 @@ on:
   push:
     branches:
       - master
-
+permissions:
+      id-token: write
+      contents: read
+      
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -12,7 +15,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
+      with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
@@ -30,9 +37,9 @@ jobs:
     - name: Login to Azure
       uses: azure/login@v2
       with:
-          client-id: 025d54e7-57fa-4c92-8a30-a6c77b79ca2e
-          tenant-id: 0fd6e779-6e1a-4452-af39-1b3a3cc38bf3
-          subscription-id: 27ff2642-1195-4c16-b9a0-4d67cdf6bd33
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
