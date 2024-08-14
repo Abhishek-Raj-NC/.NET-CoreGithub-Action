@@ -28,7 +28,7 @@ jobs:
       run: dotnet publish -c Release -o publish_output
 
     - name: Login to Azure
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
           client-id: 025d54e7-57fa-4c92-8a30-a6c77b79ca2e
           tenant-id: 0fd6e779-6e1a-4452-af39-1b3a3cc38bf3
