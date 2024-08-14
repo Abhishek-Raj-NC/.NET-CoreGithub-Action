@@ -27,6 +27,13 @@ jobs:
     - name: Publish
       run: dotnet publish -c Release -o publish_output
 
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+          client-id: 025d54e7-57fa-4c92-8a30-a6c77b79ca2e
+          tenant-id: 0fd6e779-6e1a-4452-af39-1b3a3cc38bf3
+          subscription-id: 27ff2642-1195-4c16-b9a0-4d67cdf6bd33
+
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
